@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Цифровой ежедневник | Редактируемый хронометраж дня</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif;
+        }
+
+        body {
+            background: #e9eef3;
+            padding: 24px 20px;
+            color: #1e2a3e;
+        }
+
+        .planner-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 32px;
+            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.2);
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        .header {
+            background: #1f3b4c;
+            padding: 1.5rem 2rem;
+            color: white;
+            border-bottom: 1px solid #2c4b5e;
+        }
+
+        .header h1 {
+            font-weight: 600;
+            font-size: 1.9rem;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header p {
+            opacity: 0.8;
+            margin-top: 8px;
+            font-size: 0.95rem;
+        }
+
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0 1rem;
+            gap: 0.5rem;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            padding: 1rem 1.6rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            color: #475569;
+            transition: 0.2s;
+            border-radius: 30px 30px 0 0;
+            margin-bottom: -1px;
+        }
+
+        .tab-btn:hover {
+            background: #eef2ff;
+            color: #1f3b4c;
+        }
+
+        .tab-btn.active {
+            color: #1f3b4c;
+            background: white;
+            border-bottom: 3px solid #2c7a5e;
+            font-weight: 600;
+        }
+
+        .tab-pane {
+            display: none;
+            padding: 2rem 2rem 2.5rem;
+            animation: fade 0.25s ease;
+        }
+
+        .tab-pane.active-pane {
+            display: block;
+        }
+
+        @keyframes fade {
+            from { opacity: 0; transform: translateY(5px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 780px) {
+            .schedule-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            .tab-pane {
+                padding: 1.5rem;
+            }
+        }
+
+        .timeline-card, .tasks-card {
+            background: #ffffff;
+            border-radius: 28px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.03);
+            border: 1px solid #eef2f8;
+            padding: 1.4rem 1.6rem;
+        }
+
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            border-left: 5px solid #2c7a5e;
+            padding-left: 14px;
+            margin-bottom: 1.4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .edit-timeline-btn {
+            background: #eef2ff;
+            border: none;
+            font-size: 0.8rem;
+            padding: 6px 14px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.1s;
+        }
+        .edit-timeline-btn:hover {
+            background: #d9e2ef;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: baseline;
+            padding: 12px 0;
+            border-bottom: 1px dashed #e9edf2;
+        }
+
+        .time {
+            font-weight: 700;
+            width: 85px;
+            color: #2c7a5e;
+        }
+
+        .event-desc {
+            flex: 1;
+            color: #1f2e3a;
+        }
+
+        .timeline-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 8px;
+        }
+        .edit-item-btn, .delete-item-btn {
+            background: transparent;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: 0.1s;
+        }
+        .edit-item-btn:hover, .delete-item-btn:hover { opacity: 1; }
+
+        .priority-badge {
+            background: #fff3e0;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #b45309;
+        }
+
+        .task-list {
+            list-style: none;
+            margin-top: 8px;
+        }
+
+        .task-list li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f2f5;
+        }
+
+        .task-priority {
+            font-size: 0.7rem;
+            background: #eef2ff;
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-weight: 500;
+        }
+
+        .priority-high { background: #fee2e2; color: #b91c1c; }
+        .priority-medium { background: #fff0db; color: #c2410c; }
+        .priority-low { background: #e0f2fe; color: #0369a1; }
+
+        .notes-area {
+            background: #fefcf5;
+            border-radius: 24px;
+            padding: 1.4rem;
+            border: 1px solid #f1e9d2;
+        }
+        textarea {
+            width: 100%;
+            min-height: 280px;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 1rem;
+            font-size: 0.95rem;
+            background: white;
+            resize: vertical;
+            font-family: monospace;
+        }
+
+        .ref-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.8rem;
+        }
+        .ref-card {
+            background: #f9fbfd;
+            border-radius: 24px;
+            padding: 1.2rem;
+            border: 1px solid #e9edf2;
+        }
+        .ref-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: #1f3b4c;
+            border-bottom: 2px dotted #cbd5e1;
+            display: inline-block;
+        }
+        .code-table, .timezone-table, .measure-table {
+            width: 100%;
+            font-size: 0.85rem;
+            border-collapse: collapse;
+        }
+        .code-table td, .timezone-table td, .measure-table td, .measure-table th {
+            padding: 8px 5px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .calendar-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: space-between;
+        }
+        .calendar {
+            flex: 1;
+            min-width: 280px;
+            background: #ffffff;
+            border-radius: 28px;
+            border: 1px solid #eef2f8;
+            padding: 1.2rem;
+        }
+        .calendar h3 {
+            text-align: center;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            color: #2c5a4a;
+        }
+        .weekdays, .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .weekdays div {
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #5c6e7c;
+        }
+        .days-grid {
+            gap: 8px;
+        }
+        .day-cell {
+            background: #f8fafc;
+            padding: 8px 0;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            transition: 0.1s;
+        }
+        .day-cell.today {
+            background: #2c7a5e;
+            color: white;
+            font-weight: bold;
+        }
+        .future-year {
+            margin-top: 2rem;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1.5rem;
+        }
+        footer {
+            background: #f1f5f9;
+            padding: 1rem 2rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #4b5563;
+            border-top: 1px solid #e2e8f0;
+        }
+        .info-note {
+            background: #f1f9fe;
+            border-radius: 20px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+        .inline-input {
+            font-size: 0.9rem;
+            padding: 4px 8px;
+            border-radius: 20px;
+            border: 1px solid #b9cadb;
+            width: 100%;
+        }
+        .add-timeline-row {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 40px;
+        }
+        .add-timeline-row input {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 40px;
+            border: 1px solid #cbd5e1;
+        }
+        .add-timeline-row button {
+            background: #1f3b4c;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 8px 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="planner-container">
+    <div class="header">
+        <h1>📓 Executive Daily Planner</h1>
+        <p>Освободите голову — сфокусируйтесь на выполнении. Стильный цифровой аксессуар для статуса и продуктивности.</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="schedule">📅 Расписание дня</button>
+        <button class="tab-btn" data-tab="notes">📝 Заметки</button>
+        <button class="tab-btn" data-tab="reference">📚 Справочная информация</button>
+        <button class="tab-btn" data-tab="calendar">🗓️ Календари</button>
+    </div>
+
+    <!-- Панель: РАСПИСАНИЕ (полностью редактируемый хронометраж) -->
+    <div id="schedule" class="tab-pane active-pane">
+        <div class="schedule-grid">
+            <div class="timeline-card">
+                <div class="card-title">
+                    ⏰ Хронометраж дня
+                    <button id="enableEditTimeline" class="edit-timeline-btn">✏️ Редактировать расписание</button>
+                </div>
+                <div id="timelineContainer">
+                    <!-- динамически генерируем список событий -->
+                </div>
+                <div id="addTimelinePanel" style="display: none;" class="add-timeline-row">
+                    <input type="text" id="newTimeInput" placeholder="Время (например, 13:00)" value="13:00">
+                    <input type="text" id="newEventInput" placeholder="Событие / задача">
+                    <button id="confirmAddEventBtn">➕ Добавить</button>
+                </div>
+                <div class="info-note" style="margin-top: 16px;">
+                    💡 Режим редактирования: меняйте время, описание, удаляйте или добавляйте строки. Все изменения сохраняются.
+                </div>
+            </div>
+            <div class="tasks-card">
+                <div class="card-title">✓ Задачи & Приоритеты</div>
+                <ul class="task-list" id="taskList"></ul>
+                <div style="margin-top: 16px;">
+                    <input type="text" id="newTaskInput" placeholder="Новая задача" style="padding: 8px 12px; border-radius: 40px; border: 1px solid #cbd5e1; width: 65%;">
+                    <select id="prioritySelect" style="padding: 8px; border-radius: 40px; background: white;">
+                        <option value="high">🔥 Высокий</option>
+                        <option value="medium">⚡ Средний</option>
+                        <option value="low">🍃 Низкий</option>
+                    </select>
+                    <button id="addTaskBtn" style="background:#1f3b4c; color:white; border:none; border-radius:40px; padding: 8px 18px; margin-left: 6px; cursor:pointer;">+ Добавить</button>
+                </div>
+                <p style="font-size: 0.7rem; margin-top: 14px; color: #617388;">✔ Отмечайте выполненные — клик по чекбоксу</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Панель: ЗАМЕТКИ -->
+    <div id="notes" class="tab-pane">
+        <div class="notes-area">
+            <div class="card-title">📔 Личные заметки / Идеи / Встречи</div>
+            <textarea id="notesTextarea" placeholder="Напишите всё, что важно..."></textarea>
+            <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+                <button id="saveNotesBtn" style="background:#eef2ff; border:none; border-radius: 30px; padding: 6px 20px; cursor:pointer;">💾 Сохранить заметку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Панель: СПРАВОЧНАЯ ИНФОРМАЦИЯ -->
+    <div id="reference" class="tab-pane">
+        <div class="ref-grid">
+            <div class="ref-card"><h3>📞 Телефонные коды стран</h3><table class="code-table"><tr><td>🇷🇺 Россия</td><td>+7</td></tr><tr><td>🇺🇸 США</td><td>+1</td></tr><tr><td>🇬🇧 Великобритания</td><td>+44</td></tr><tr><td>🇩🇪 Германия</td><td>+49</td></tr><tr><td>🇫🇷 Франция</td><td>+33</td></tr><tr><td>🇨🇳 Китай</td><td>+86</td></tr><tr><td>🇯🇵 Япония</td><td>+81</td></tr><tr><td>🇦🇪 ОАЭ</td><td>+971</td></tr></table></div>
+            <div class="ref-card"><h3>🌍 Часовые пояса (МСК ±)</h3><table class="timezone-table"><tr><td>Калининград</td><td>MSK-1</td></tr><tr><td>Москва / СПб</td><td>MSK (UTC+3)</td></tr><tr><td>Екатеринбург</td><td>MSK+2</td></tr><tr><td>Новосибирск</td><td>MSK+4</td></tr><tr><td>Владивосток</td><td>MSK+7</td></tr><tr><td>Лондон</td><td>MSK-2 (зимой)</td></tr><tr><td>Нью-Йорк</td><td>MSK-7</td></tr><tr><td>Токио</td><td>MSK+6</td></tr></table></div>
+            <div class="ref-card"><h3>📏 Таблица мер и весов</h3><table class="measure-table"><tr><th>Единица</th><th>Значение</th></tr><tr><td>1 дюйм (in)</td><td>2.54 см</td></tr><tr><td>1 фут (ft)</td><td>30.48 см</td></tr><tr><td>1 фунт (lb)</td><td>453.6 г</td></tr><tr><td>1 унция (oz)</td><td>28.35 г</td></tr><tr><td>1 галлон (gal)</td><td>3.785 л</td></tr><tr><td>1 км</td><td>0.621 мили</td></tr></table><div style="margin-top: 10px; font-size: 0.7rem;">⚖️ Кулинарные: 1 стакан = 240 мл, 1 ст. ложка = 15 мл</div></div>
+        </div>
+    </div>
+
+    <!-- Панель: КАЛЕНДАРИ -->
+    <div id="calendar" class="tab-pane">
+        <div id="calendarRoot"></div>
+        <div class="info-note">📆 Календарь помогает планировать долгосрочные цели.</div>
+    </div>
+    <footer>© Цифровой ежедневник — освободите разум для главного. Редактируйте хронометраж под свой ритм.</footer>
+</div>
+
+<script>
+    // ---------- РЕДАКТИРУЕМЫЙ ХРОНОМЕТРАЖ (timeline) ----------
+    let timelineEvents = []; // массив {time, event}
+    let editMode = false;
+
+    // Загрузка / сохранение в localStorage
+    function loadTimeline() {
+        const stored = localStorage.getItem('daily_timeline_events');
+        if(stored) {
+            timelineEvents = JSON.parse(stored);
+        } else {
+            // данные по умолчанию
+            timelineEvents = [
+                { time: "09:00", event: "Планирование дня / Утренний ритуал" },
+                { time: "10:00", event: "Глубокая работа / Приоритетная задача" },
+                { time: "12:30", event: "Обед и восстановление" },
+                { time: "14:00", event: "Встречи / переговоры" },
+                { time: "16:00", event: "Работа с почтой и отчёты" },
+                { time: "18:00", event: "Подведение итогов дня" },
+                { time: "19:30", event: "Личное время / спорт / семья" }
+            ];
+            saveTimeline();
+        }
+    }
+
+    function saveTimeline() {
+        localStorage.setItem('daily_timeline_events', JSON.stringify(timelineEvents));
+    }
+
+    function renderTimeline() {
+        const container = document.getElementById('timelineContainer');
+        if(!container) return;
+        if(!timelineEvents.length) {
+            container.innerHTML = '<div class="info-note" style="text-align:center;">Нет событий. Добавьте через режим редактирования ✨</div>';
+            return;
+        }
+        container.innerHTML = timelineEvents.map((item, idx) => `
+            <div class="timeline-item" data-idx="${idx}">
+                ${editMode ? 
+                    `<input type="text" class="inline-input edit-time" value="${escapeHtml(item.time)}" style="width: 85px; margin-right: 10px;">` :
+                    `<div class="time">${escapeHtml(item.time)}</div>`
+                }
+                ${editMode ? 
+                    `<input type="text" class="inline-input edit-event" value="${escapeHtml(item.event)}" style="flex:1;">` :
+                    `<div class="event-desc">${escapeHtml(item.event)}</div>`
+                }
+                ${editMode ? `
+                    <div class="timeline-actions">
+                        <button class="save-item-btn" data-idx="${idx}" title="Сохранить изменения">💾</button>
+                        <button class="delete-item-btn" data-idx="${idx}" title="Удалить">🗑️</button>
+                    </div>
+                ` : `
+                    <div class="timeline-actions">
+                        <button class="edit-item-btn" data-idx="${idx}" title="Редактировать (включите режим)">✏️</button>
+                        <button class="delete-item-btn" data-idx="${idx}" title="Удалить (вкл. режим)">🗑️</button>
+                    </div>
+                `}
+            </div>
+        `).join('');
+
+        // Обработчики для кнопок в зависимости от режима
+        if(editMode) {
+            document.querySelectorAll('.save-item-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(btn.getAttribute('data-idx'));
+                    const containerDiv = btn.closest('.timeline-item');
+                    const newTime = containerDiv.querySelector('.edit-time').value;
+                    const newEvent = containerDiv.querySelector('.edit-event').value;
+                    if(newTime && newEvent) {
+                        timelineEvents[idx] = { time: newTime, event: newEvent };
+                        saveTimeline();
+                        renderTimeline(); // перерисовка в том же режиме
+                    } else alert('Заполните и время, и событие');
+                });
+            });
+            document.querySelectorAll('.delete-item-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(btn.getAttribute('data-idx'));
+                    timelineEvents.splice(idx, 1);
+                    saveTimeline();
+                    renderTimeline();
+                });
+            });
+        } else {
+            // Обычный режим (кнопки редактирования и удаления могут предупреждать о необходимости включить режим)
+            document.querySelectorAll('.edit-item-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    alert('Включите режим "Редактировать расписание" вверху карточки');
+                });
+            });
+            document.querySelectorAll('.delete-item-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    alert('Включите режим редактирования, чтобы удалять события');
+                });
+            });
+        }
+    }
+
+    function enableEditMode() {
+        editMode = !editMode;
+        const addPanel = document.getElementById('addTimelinePanel');
+        const editBtn = document.getElementById('enableEditTimeline');
+        if(editMode) {
+            addPanel.style.display = 'flex';
+            editBtn.textContent = '🔒 Завершить редактирование';
+            editBtn.style.background = '#2c7a5e';
+            editBtn.style.color = 'white';
+        } else {
+            addPanel.style.display = 'none';
+            editBtn.textContent = '✏️ Редактировать расписание';
+            editBtn.style.background = '#eef2ff';
+            editBtn.style.color = '#1f3b4c';
+        }
+        renderTimeline(); // перерисовываем с новыми элементами управления
+    }
+
+    function addNewTimelineEvent() {
+        const timeInput = document.getElementById('newTimeInput');
+        const eventInput = document.getElementById('newEventInput');
+        const time = timeInput.value.trim();
+        const eventText = eventInput.value.trim();
+        if(!time || !eventText) {
+            alert('Введите время и описание события');
+            return;
+        }
+        timelineEvents.push({ time: time, event: eventText });
+        saveTimeline();
+        renderTimeline();
+        timeInput.value = '';
+        eventInput.value = '';
+    }
+
+    function escapeHtml(str) {
+        if(!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+
+    // ---------- ЗАДАЧИ (приоритеты) ----------
+    let tasks = [];
+    function saveTasksToLocal() { localStorage.setItem('daily_tasks_edit', JSON.stringify(tasks)); }
+    function loadTasks() {
+        const stored = localStorage.getItem('daily_tasks_edit');
+        if(stored) tasks = JSON.parse(stored);
+        else {
+            tasks = [
+                { text: "Подготовить отчет для инвесторов", priority: "high", completed: false },
+                { text: "Встреча с командой в 15:00", priority: "medium", completed: false },
+                { text: "Прочитать деловую литературу", priority: "low", completed: false }
+            ];
+            saveTasksToLocal();
+        }
+        renderTaskList();
+    }
+    function renderTaskList() {
+        const taskListEl = document.getElementById('taskList');
+        if(!taskListEl) return;
+        taskListEl.innerHTML = '';
+        tasks.forEach((task, idx) => {
+            const li = document.createElement('li');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = task.completed;
+            checkbox.addEventListener('change', () => {
+                tasks[idx].completed = checkbox.checked;
+                saveTasksToLocal();
+                renderTaskList();
+            });
+            const span = document.createElement('span');
+            span.style.flex = '1';
+            span.style.textDecoration = task.completed ? 'line-through' : 'none';
+            span.innerText = task.text;
+            const prioritySpan = document.createElement('span');
+            let priorityClass = task.priority === 'high' ? 'priority-high' : (task.priority === 'medium' ? 'priority-medium' : 'priority-low');
+            let priorityText = task.priority === 'high' ? 'Высокий' : (task.priority === 'medium' ? 'Средний' : 'Низкий');
+            prioritySpan.className = `task-priority ${priorityClass}`;
+            prioritySpan.innerText = priorityText;
+            const deleteBtn = document.createElement('button');
+            deleteBtn.innerText = '🗑️';
+            deleteBtn.style.background = 'none';
+            deleteBtn.style.border = 'none';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.onclick = () => { tasks.splice(idx,1); saveTasksToLocal(); renderTaskList(); };
+            li.appendChild(checkbox);
+            li.appendChild(span);
+            li.appendChild(prioritySpan);
+            li.appendChild(deleteBtn);
+            taskListEl.appendChild(li);
+        });
+    }
+    function addNewTask() {
+        const input = document.getElementById('newTaskInput');
+        const prioritySelect = document.getElementById('prioritySelect');
+        const text = input.value.trim();
+        if(!text) return;
+        tasks.push({ text, priority: prioritySelect.value, completed: false });
+        saveTasksToLocal();
+        renderTaskList();
+        input.value = '';
+    }
+
+    // ЗАМЕТКИ
+    function loadNotes() { 
+        const saved = localStorage.getItem('daily_notes_final');
+        const ta = document.getElementById('notesTextarea');
+        if(saved && ta) ta.value = saved;
+    }
+    function saveNotes() {
+        const ta = document.getElementById('notesTextarea');
+        if(ta) localStorage.setItem('daily_notes_final', ta.value);
+        alert('Заметки сохранены');
+    }
+
+    // КАЛЕНДАРИ
+    function renderCalendar(year, containerId) {
+        const container = document.getElementById(containerId);
+        if(!container) return;
+        container.innerHTML = '';
+        const monthsGrid = document.createElement('div');
+        monthsGrid.style.display = 'grid';
+        monthsGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(280px, 1fr))';
+        monthsGrid.style.gap = '1.5rem';
+        for(let month=0; month<12; month++) {
+            const firstDay = new Date(year, month, 1);
+            let startWeekday = firstDay.getDay();
+            let startOffset = startWeekday === 0 ? 6 : startWeekday-1;
+            const daysInMonth = new Date(year, month+1, 0).getDate();
+            const calDiv = document.createElement('div'); calDiv.className = 'calendar';
+            const title = document.createElement('h3'); title.innerText = `${['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'][month]} ${year}`;
+            calDiv.appendChild(title);
+            const weekRow = document.createElement('div'); weekRow.className = 'weekdays';
+            ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].forEach(d=>{ let div=document.createElement('div'); div.innerText=d; weekRow.appendChild(div); });
+            calDiv.appendChild(weekRow);
+            const daysGrid = document.createElement('div'); daysGrid.className = 'days-grid';
+            for(let i=0;i<startOffset;i++) { let empty=document.createElement('div'); empty.className='day-cell'; empty.style.background='transparent'; daysGrid.appendChild(empty); }
+            const today = new Date();
+            for(let d=1; d<=daysInMonth; d++) {
+                let cell=document.createElement('div'); cell.className='day-cell'; cell.innerText=d;
+                if(year===today.getFullYear() && month===today.getMonth() && d===today.getDate()) cell.classList.add('today');
+                daysGrid.appendChild(cell);
+            }
+            calDiv.appendChild(daysGrid);
+            monthsGrid.appendChild(calDiv);
+        }
+        container.appendChild(monthsGrid);
+    }
+    function renderBothCalendars() {
+        const curYear = new Date().getFullYear();
+        const root = document.getElementById('calendarRoot');
+        if(root) {
+            root.innerHTML = `<div><h2 style="margin-bottom:1rem;">📅 Текущий год</h2><div id="currentYearGrid"></div></div><div style="margin-top:2rem;"><h2 style="margin-bottom:1rem;">📆 Будущий год — ${curYear+1}</h2><div id="nextYearGrid"></div></div>`;
+            renderCalendar(curYear, 'currentYearGrid');
+            renderCalendar(curYear+1, 'nextYearGrid');
+        }
+    }
+
+    // Табы
+    function initTabs() {
+        document.querySelectorAll('.tab-btn').forEach(btn=>{
+            btn.addEventListener('click',()=>{
+                const tabId=btn.getAttribute('data-tab');
+                document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active-pane'));
+                const activePane=document.getElementById(tabId);
+                if(activePane) activePane.classList.add('active-pane');
+                if(tabId==='calendar') renderBothCalendars();
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadTimeline();
+        renderTimeline();
+        loadTasks();
+        loadNotes();
+        renderBothCalendars();
+        initTabs();
+
+        const editBtn = document.getElementById('enableEditTimeline');
+        if(editBtn) editBtn.addEventListener('click', enableEditMode);
+        const addConfirm = document.getElementById('confirmAddEventBtn');
+        if(addConfirm) addConfirm.addEventListener('click', addNewTimelineEvent);
+        const addTaskBtn = document.getElementById('addTaskBtn');
+        if(addTaskBtn) addTaskBtn.addEventListener('click', addNewTask);
+        const saveNoteBtn = document.getElementById('saveNotesBtn');
+        if(saveNoteBtn) saveNoteBtn.addEventListener('click', saveNotes);
+    });
+</script>
+</body>
+</html>
