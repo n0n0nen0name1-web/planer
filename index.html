@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Цифровой ежедневник | Редактируемый хронометраж дня</title>
+    <title>Цифровой ежедневник | Календарь с планами и выделением</title>
     <style>
         * {
             margin: 0;
@@ -25,7 +25,6 @@
             border-radius: 32px;
             box-shadow: 0 25px 45px -12px rgba(0,0,0,0.2);
             overflow: hidden;
-            transition: all 0.2s;
         }
 
         .header {
@@ -38,7 +37,6 @@
         .header h1 {
             font-weight: 600;
             font-size: 1.9rem;
-            letter-spacing: -0.3px;
             display: flex;
             align-items: center;
             gap: 12px;
@@ -69,7 +67,6 @@
             color: #475569;
             transition: 0.2s;
             border-radius: 30px 30px 0 0;
-            margin-bottom: -1px;
         }
 
         .tab-btn:hover {
@@ -87,7 +84,7 @@
         .tab-pane {
             display: none;
             padding: 2rem 2rem 2.5rem;
-            animation: fade 0.25s ease;
+            animation: fade 0.2s ease;
         }
 
         .tab-pane.active-pane {
@@ -99,6 +96,7 @@
             to { opacity: 1; transform: translateY(0);}
         }
 
+        /* расписание */
         .schedule-grid {
             display: grid;
             grid-template-columns: 1fr 1.2fr;
@@ -108,11 +106,8 @@
         @media (max-width: 780px) {
             .schedule-grid {
                 grid-template-columns: 1fr;
-                gap: 1.5rem;
             }
-            .tab-pane {
-                padding: 1.5rem;
-            }
+            .tab-pane { padding: 1.5rem; }
         }
 
         .timeline-card, .tasks-card {
@@ -132,7 +127,18 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
         }
+
+        .current-date-badge {
+            background: #eef2ff;
+            font-size: 0.85rem;
+            font-weight: normal;
+            padding: 5px 14px;
+            border-radius: 40px;
+            color: #1f3b4c;
+        }
+
         .edit-timeline-btn {
             background: #eef2ff;
             border: none;
@@ -141,10 +147,6 @@
             border-radius: 40px;
             cursor: pointer;
             font-weight: 500;
-            transition: 0.1s;
-        }
-        .edit-timeline-btn:hover {
-            background: #d9e2ef;
         }
 
         .timeline-item {
@@ -152,6 +154,8 @@
             align-items: baseline;
             padding: 12px 0;
             border-bottom: 1px dashed #e9edf2;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
         .time {
@@ -168,32 +172,46 @@
         .timeline-actions {
             display: flex;
             gap: 8px;
-            margin-left: 8px;
         }
-        .edit-item-btn, .delete-item-btn {
-            background: transparent;
-            border: none;
-            font-size: 1rem;
-            cursor: pointer;
-            opacity: 0.6;
-            transition: 0.1s;
-        }
-        .edit-item-btn:hover, .delete-item-btn:hover { opacity: 1; }
 
-        .priority-badge {
-            background: #fff3e0;
-            padding: 4px 12px;
+        .inline-input {
+            font-size: 0.9rem;
+            padding: 6px 10px;
             border-radius: 40px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #b45309;
+            border: 1px solid #cbd5e1;
         }
 
+        .add-timeline-row {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 40px;
+        }
+
+        .add-timeline-row input {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 40px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .add-timeline-row button {
+            background: #1f3b4c;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 8px 20px;
+            cursor: pointer;
+        }
+
+        /* задачи */
         .task-list {
             list-style: none;
             margin-top: 8px;
         }
-
         .task-list li {
             display: flex;
             align-items: center;
@@ -201,19 +219,17 @@
             padding: 10px 0;
             border-bottom: 1px solid #f0f2f5;
         }
-
         .task-priority {
             font-size: 0.7rem;
-            background: #eef2ff;
             padding: 2px 10px;
             border-radius: 30px;
             font-weight: 500;
         }
-
         .priority-high { background: #fee2e2; color: #b91c1c; }
         .priority-medium { background: #fff0db; color: #c2410c; }
         .priority-low { background: #e0f2fe; color: #0369a1; }
 
+        /* заметки */
         .notes-area {
             background: #fefcf5;
             border-radius: 24px;
@@ -227,11 +243,11 @@
             border-radius: 20px;
             padding: 1rem;
             font-size: 0.95rem;
-            background: white;
             resize: vertical;
             font-family: monospace;
         }
 
+        /* справочная */
         .ref-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -248,7 +264,6 @@
             margin-bottom: 1rem;
             color: #1f3b4c;
             border-bottom: 2px dotted #cbd5e1;
-            display: inline-block;
         }
         .code-table, .timezone-table, .measure-table {
             width: 100%;
@@ -260,65 +275,121 @@
             border-bottom: 1px solid #e2e8f0;
         }
 
-        .calendar-wrap {
+        /* КАЛЕНДАРИ - классический вид (два года), но с возможностью выбора дня и планами */
+        .calendar-with-plans {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        .calendars-wrapper {
             display: flex;
             flex-wrap: wrap;
             gap: 2rem;
             justify-content: space-between;
         }
-        .calendar {
+        .year-calendar {
             flex: 1;
-            min-width: 280px;
+            min-width: 320px;
             background: #ffffff;
             border-radius: 28px;
             border: 1px solid #eef2f8;
             padding: 1.2rem;
         }
-        .calendar h3 {
+        .year-calendar h3 {
             text-align: center;
             margin-bottom: 1rem;
             font-weight: 600;
             color: #2c5a4a;
+            font-size: 1.3rem;
         }
-        .weekdays, .days-grid {
+        .month-grid {
+            margin-bottom: 1.5rem;
+            break-inside: avoid;
+        }
+        .month-name {
+            font-weight: 600;
+            margin: 0.8rem 0 0.5rem 0;
+            color: #1f3b4c;
+            font-size: 0.9rem;
+            padding-left: 4px;
+        }
+        .weekdays-row {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             text-align: center;
-            gap: 6px;
-            margin-bottom: 8px;
-        }
-        .weekdays div {
+            font-size: 0.7rem;
             font-weight: 600;
-            font-size: 0.8rem;
             color: #5c6e7c;
+            margin-bottom: 6px;
         }
-        .days-grid {
-            gap: 8px;
+        .days-grid-clickable {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
         }
-        .day-cell {
+        .day-cell-clickable {
             background: #f8fafc;
+            text-align: center;
             padding: 8px 0;
             border-radius: 30px;
-            font-size: 0.85rem;
+            cursor: pointer;
             transition: 0.1s;
+            font-size: 0.85rem;
+            position: relative;
         }
-        .day-cell.today {
+        .day-cell-clickable:hover {
+            background: #d9e6f5;
+        }
+        .day-cell-clickable.selected-day {
             background: #2c7a5e;
             color: white;
             font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
-        .future-year {
-            margin-top: 2rem;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 1.5rem;
+        /* выделение дней, на которые есть планы */
+        .day-cell-clickable.has-plan {
+            background: #fff3bf;
+            font-weight: 600;
+            position: relative;
         }
-        footer {
-            background: #f1f5f9;
-            padding: 1rem 2rem;
-            text-align: center;
-            font-size: 0.75rem;
-            color: #4b5563;
-            border-top: 1px solid #e2e8f0;
+        .day-cell-clickable.has-plan.selected-day {
+            background: #2c7a5e;
+            color: white;
+        }
+        .day-cell-clickable.has-plan::after {
+            content: "📌";
+            font-size: 0.6rem;
+            position: absolute;
+            bottom: 0px;
+            right: 4px;
+            opacity: 0.8;
+        }
+
+        .day-plans-panel {
+            background: #fefcf5;
+            border-radius: 28px;
+            padding: 1.5rem;
+            border: 1px solid #f1e9d2;
+            margin-top: 0.5rem;
+        }
+        .selected-date-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #1f3b4c;
+        }
+        .plan-textarea {
+            width: 100%;
+            min-height: 150px;
+            margin: 1rem 0;
+        }
+        .save-plan-btn {
+            background: #1f3b4c;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 8px 24px;
+            cursor: pointer;
         }
         .info-note {
             background: #f1f9fe;
@@ -328,36 +399,13 @@
             font-size: 0.85rem;
             text-align: center;
         }
-        .inline-input {
-            font-size: 0.9rem;
-            padding: 4px 8px;
-            border-radius: 20px;
-            border: 1px solid #b9cadb;
-            width: 100%;
-        }
-        .add-timeline-row {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            background: #f8fafc;
-            padding: 12px;
-            border-radius: 40px;
-        }
-        .add-timeline-row input {
-            flex: 1;
-            padding: 8px 12px;
-            border-radius: 40px;
-            border: 1px solid #cbd5e1;
-        }
-        .add-timeline-row button {
-            background: #1f3b4c;
-            color: white;
-            border: none;
-            border-radius: 40px;
-            padding: 8px 20px;
-            cursor: pointer;
+        footer {
+            background: #f1f5f9;
+            padding: 1rem 2rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #4b5563;
+            border-top: 1px solid #e2e8f0;
         }
     </style>
 </head>
@@ -365,93 +413,100 @@
 <div class="planner-container">
     <div class="header">
         <h1>📓 Executive Daily Planner</h1>
-        <p>Освободите голову — сфокусируйтесь на выполнении. Стильный цифровой аксессуар для статуса и продуктивности.</p>
+        <p>Освободите голову — фокус на выполнении. В календаре дни с планами отмечены 📌</p>
     </div>
 
     <div class="tabs">
         <button class="tab-btn active" data-tab="schedule">📅 Расписание дня</button>
         <button class="tab-btn" data-tab="notes">📝 Заметки</button>
         <button class="tab-btn" data-tab="reference">📚 Справочная информация</button>
-        <button class="tab-btn" data-tab="calendar">🗓️ Календари</button>
+        <button class="tab-btn" data-tab="calendar">🗓️ Календари + Планы</button>
     </div>
 
-    <!-- Панель: РАСПИСАНИЕ (полностью редактируемый хронометраж) -->
+    <!-- Панель РАСПИСАНИЕ -->
     <div id="schedule" class="tab-pane active-pane">
         <div class="schedule-grid">
             <div class="timeline-card">
                 <div class="card-title">
                     ⏰ Хронометраж дня
-                    <button id="enableEditTimeline" class="edit-timeline-btn">✏️ Редактировать расписание</button>
+                    <span class="current-date-badge" id="currentDateBadge"></span>
+                    <button id="enableEditTimeline" class="edit-timeline-btn">✏️ Редактировать</button>
                 </div>
-                <div id="timelineContainer">
-                    <!-- динамически генерируем список событий -->
-                </div>
+                <div id="timelineContainer"></div>
                 <div id="addTimelinePanel" style="display: none;" class="add-timeline-row">
-                    <input type="text" id="newTimeInput" placeholder="Время (например, 13:00)" value="13:00">
-                    <input type="text" id="newEventInput" placeholder="Событие / задача">
+                    <input type="text" id="newTimeInput" placeholder="Время (09:00)" value="13:00">
+                    <input type="text" id="newEventInput" placeholder="Событие">
                     <button id="confirmAddEventBtn">➕ Добавить</button>
                 </div>
-                <div class="info-note" style="margin-top: 16px;">
-                    💡 Режим редактирования: меняйте время, описание, удаляйте или добавляйте строки. Все изменения сохраняются.
-                </div>
+                <div class="info-note">💡 Режим редактирования: меняйте время, описание, удаляйте строки. Всё сохраняется.</div>
             </div>
             <div class="tasks-card">
                 <div class="card-title">✓ Задачи & Приоритеты</div>
                 <ul class="task-list" id="taskList"></ul>
                 <div style="margin-top: 16px;">
-                    <input type="text" id="newTaskInput" placeholder="Новая задача" style="padding: 8px 12px; border-radius: 40px; border: 1px solid #cbd5e1; width: 65%;">
-                    <select id="prioritySelect" style="padding: 8px; border-radius: 40px; background: white;">
+                    <input type="text" id="newTaskInput" placeholder="Новая задача" style="padding: 8px 12px; border-radius: 40px; border: 1px solid #cbd5e1; width: 60%;">
+                    <select id="prioritySelect" style="padding: 8px; border-radius: 40px;">
                         <option value="high">🔥 Высокий</option>
                         <option value="medium">⚡ Средний</option>
                         <option value="low">🍃 Низкий</option>
                     </select>
-                    <button id="addTaskBtn" style="background:#1f3b4c; color:white; border:none; border-radius:40px; padding: 8px 18px; margin-left: 6px; cursor:pointer;">+ Добавить</button>
+                    <button id="addTaskBtn" style="background:#1f3b4c; color:white; border:none; border-radius:40px; padding: 8px 18px; cursor:pointer;">+</button>
                 </div>
-                <p style="font-size: 0.7rem; margin-top: 14px; color: #617388;">✔ Отмечайте выполненные — клик по чекбоксу</p>
             </div>
         </div>
     </div>
 
-    <!-- Панель: ЗАМЕТКИ -->
+    <!-- ЗАМЕТКИ -->
     <div id="notes" class="tab-pane">
         <div class="notes-area">
-            <div class="card-title">📔 Личные заметки / Идеи / Встречи</div>
-            <textarea id="notesTextarea" placeholder="Напишите всё, что важно..."></textarea>
-            <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
-                <button id="saveNotesBtn" style="background:#eef2ff; border:none; border-radius: 30px; padding: 6px 20px; cursor:pointer;">💾 Сохранить заметку</button>
+            <div class="card-title">📔 Личные заметки</div>
+            <textarea id="notesTextarea" placeholder="Идеи, встречи, мысли..."></textarea>
+            <button id="saveNotesBtn" style="margin-top:12px; background:#eef2ff; border:none; border-radius:30px; padding:6px 20px;">💾 Сохранить</button>
+        </div>
+    </div>
+
+    <!-- СПРАВКА -->
+    <div id="reference" class="tab-pane">
+        <div class="ref-grid">
+            <div class="ref-card"><h3>📞 Телефонные коды</h3><table class="code-table"><tr><td>🇷🇺 Россия</td><td>+7</td><tr><td>🇺🇸 США</td><td>+1</td></tr><tr><td>🇬🇧 Великобритания</td><td>+44</td></tr><tr><td>🇩🇪 Германия</td><td>+49</td></tr></table></div>
+            <div class="ref-card"><h3>🌍 Часовые пояса</h3><table class="timezone-table"><tr><td>Москва</td><td>UTC+3</td></tr><tr><td>Лондон</td><td>UTC+0/+1</td></tr><tr><td>Нью-Йорк</td><td>UTC-5</td></tr><tr><td>Токио</td><td>UTC+9</td></tr></table></div>
+            <div class="ref-card"><h3>📏 Меры и веса</h3><table class="measure-table"><tr><td>1 дюйм</td><td>2.54 см</td></tr><tr><td>1 фут</td><td>30.48 см</td></tr><tr><td>1 фунт</td><td>453.6 г</td></tr><tr><td>1 литр</td><td>0.264 гал</td></tr></table></div>
+        </div>
+    </div>
+
+    <!-- КАЛЕНДАРИ (текущий и будущий год) + панель планов на выбранный день -->
+    <div id="calendar" class="tab-pane">
+        <div class="calendar-with-plans">
+            <div class="calendars-wrapper" id="calendarsWrapper"></div>
+            <div class="day-plans-panel">
+                <div class="selected-date-title" id="selectedDateTitle">Выберите день в календаре</div>
+                <textarea id="dayPlanText" class="plan-textarea" placeholder="Запишите планы на этот день: встречи, задачи, заметки..."></textarea>
+                <button id="saveDayPlanBtn" class="save-plan-btn">📌 Сохранить планы на этот день</button>
+                <div class="info-note">✨ Нажмите на любую дату в календаре — напишите планы. Дни с сохранёнными планами выделяются жёлтым цветом и значком 📌</div>
             </div>
         </div>
     </div>
-
-    <!-- Панель: СПРАВОЧНАЯ ИНФОРМАЦИЯ -->
-    <div id="reference" class="tab-pane">
-        <div class="ref-grid">
-            <div class="ref-card"><h3>📞 Телефонные коды стран</h3><table class="code-table"><tr><td>🇷🇺 Россия</td><td>+7</td></tr><tr><td>🇺🇸 США</td><td>+1</td></tr><tr><td>🇬🇧 Великобритания</td><td>+44</td></tr><tr><td>🇩🇪 Германия</td><td>+49</td></tr><tr><td>🇫🇷 Франция</td><td>+33</td></tr><tr><td>🇨🇳 Китай</td><td>+86</td></tr><tr><td>🇯🇵 Япония</td><td>+81</td></tr><tr><td>🇦🇪 ОАЭ</td><td>+971</td></tr></table></div>
-            <div class="ref-card"><h3>🌍 Часовые пояса (МСК ±)</h3><table class="timezone-table"><tr><td>Калининград</td><td>MSK-1</td></tr><tr><td>Москва / СПб</td><td>MSK (UTC+3)</td></tr><tr><td>Екатеринбург</td><td>MSK+2</td></tr><tr><td>Новосибирск</td><td>MSK+4</td></tr><tr><td>Владивосток</td><td>MSK+7</td></tr><tr><td>Лондон</td><td>MSK-2 (зимой)</td></tr><tr><td>Нью-Йорк</td><td>MSK-7</td></tr><tr><td>Токио</td><td>MSK+6</td></tr></table></div>
-            <div class="ref-card"><h3>📏 Таблица мер и весов</h3><table class="measure-table"><tr><th>Единица</th><th>Значение</th></tr><tr><td>1 дюйм (in)</td><td>2.54 см</td></tr><tr><td>1 фут (ft)</td><td>30.48 см</td></tr><tr><td>1 фунт (lb)</td><td>453.6 г</td></tr><tr><td>1 унция (oz)</td><td>28.35 г</td></tr><tr><td>1 галлон (gal)</td><td>3.785 л</td></tr><tr><td>1 км</td><td>0.621 мили</td></tr></table><div style="margin-top: 10px; font-size: 0.7rem;">⚖️ Кулинарные: 1 стакан = 240 мл, 1 ст. ложка = 15 мл</div></div>
-        </div>
-    </div>
-
-    <!-- Панель: КАЛЕНДАРИ -->
-    <div id="calendar" class="tab-pane">
-        <div id="calendarRoot"></div>
-        <div class="info-note">📆 Календарь помогает планировать долгосрочные цели.</div>
-    </div>
-    <footer>© Цифровой ежедневник — освободите разум для главного. Редактируйте хронометраж под свой ритм.</footer>
+    <footer>© Цифровой ежедневник — планируйте дни и достигайте целей. Дни с планами отмечены 📌</footer>
 </div>
 
 <script>
-    // ---------- РЕДАКТИРУЕМЫЙ ХРОНОМЕТРАЖ (timeline) ----------
-    let timelineEvents = []; // массив {time, event}
+    // ---------- 1. ХРОНОМЕТРАЖ (редактируемый, с отображением текущей даты) ----------
+    let timelineEvents = [];
     let editMode = false;
 
-    // Загрузка / сохранение в localStorage
+    function updateCurrentDateBadge() {
+        const badge = document.getElementById('currentDateBadge');
+        if(badge) {
+            const today = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            badge.innerText = today.toLocaleDateString('ru-RU', options);
+        }
+    }
+
     function loadTimeline() {
         const stored = localStorage.getItem('daily_timeline_events');
-        if(stored) {
-            timelineEvents = JSON.parse(stored);
-        } else {
-            // данные по умолчанию
+        if(stored) timelineEvents = JSON.parse(stored);
+        else {
             timelineEvents = [
                 { time: "09:00", event: "Планирование дня / Утренний ритуал" },
                 { time: "10:00", event: "Глубокая работа / Приоритетная задача" },
@@ -459,246 +514,233 @@
                 { time: "14:00", event: "Встречи / переговоры" },
                 { time: "16:00", event: "Работа с почтой и отчёты" },
                 { time: "18:00", event: "Подведение итогов дня" },
-                { time: "19:30", event: "Личное время / спорт / семья" }
+                { time: "19:30", event: "Личное время" }
             ];
             saveTimeline();
         }
     }
-
-    function saveTimeline() {
-        localStorage.setItem('daily_timeline_events', JSON.stringify(timelineEvents));
-    }
+    function saveTimeline() { localStorage.setItem('daily_timeline_events', JSON.stringify(timelineEvents)); }
 
     function renderTimeline() {
         const container = document.getElementById('timelineContainer');
         if(!container) return;
-        if(!timelineEvents.length) {
-            container.innerHTML = '<div class="info-note" style="text-align:center;">Нет событий. Добавьте через режим редактирования ✨</div>';
-            return;
-        }
+        if(!timelineEvents.length) { container.innerHTML = '<div class="info-note">Нет событий. Добавьте через режим редактирования.</div>'; return; }
         container.innerHTML = timelineEvents.map((item, idx) => `
             <div class="timeline-item" data-idx="${idx}">
-                ${editMode ? 
-                    `<input type="text" class="inline-input edit-time" value="${escapeHtml(item.time)}" style="width: 85px; margin-right: 10px;">` :
-                    `<div class="time">${escapeHtml(item.time)}</div>`
-                }
-                ${editMode ? 
-                    `<input type="text" class="inline-input edit-event" value="${escapeHtml(item.event)}" style="flex:1;">` :
-                    `<div class="event-desc">${escapeHtml(item.event)}</div>`
-                }
-                ${editMode ? `
-                    <div class="timeline-actions">
-                        <button class="save-item-btn" data-idx="${idx}" title="Сохранить изменения">💾</button>
-                        <button class="delete-item-btn" data-idx="${idx}" title="Удалить">🗑️</button>
-                    </div>
-                ` : `
-                    <div class="timeline-actions">
-                        <button class="edit-item-btn" data-idx="${idx}" title="Редактировать (включите режим)">✏️</button>
-                        <button class="delete-item-btn" data-idx="${idx}" title="Удалить (вкл. режим)">🗑️</button>
-                    </div>
-                `}
+                ${editMode ? `<input type="text" class="inline-input edit-time" value="${escapeHtml(item.time)}" style="width:85px;">` : `<div class="time">${escapeHtml(item.time)}</div>`}
+                ${editMode ? `<input type="text" class="inline-input edit-event" value="${escapeHtml(item.event)}" style="flex:1;">` : `<div class="event-desc">${escapeHtml(item.event)}</div>`}
+                ${editMode ? `<div class="timeline-actions"><button class="save-item-btn" data-idx="${idx}">💾</button><button class="delete-item-btn" data-idx="${idx}">🗑️</button></div>` : `<div class="timeline-actions"><button class="edit-item-btn" data-idx="${idx}" title="Включите режим редактирования">✏️</button><button class="delete-item-btn" data-idx="${idx}" title="Включите режим">🗑️</button></div>`}
             </div>
         `).join('');
-
-        // Обработчики для кнопок в зависимости от режима
         if(editMode) {
             document.querySelectorAll('.save-item-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const idx = parseInt(btn.getAttribute('data-idx'));
-                    const containerDiv = btn.closest('.timeline-item');
-                    const newTime = containerDiv.querySelector('.edit-time').value;
-                    const newEvent = containerDiv.querySelector('.edit-event').value;
-                    if(newTime && newEvent) {
-                        timelineEvents[idx] = { time: newTime, event: newEvent };
-                        saveTimeline();
-                        renderTimeline(); // перерисовка в том же режиме
-                    } else alert('Заполните и время, и событие');
-                });
+                btn.onclick = () => {
+                    const idx = parseInt(btn.dataset.idx);
+                    const div = btn.closest('.timeline-item');
+                    const newTime = div.querySelector('.edit-time').value;
+                    const newEvent = div.querySelector('.edit-event').value;
+                    if(newTime && newEvent) { timelineEvents[idx] = { time: newTime, event: newEvent }; saveTimeline(); renderTimeline(); }
+                    else alert('Заполните поля');
+                };
             });
             document.querySelectorAll('.delete-item-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const idx = parseInt(btn.getAttribute('data-idx'));
-                    timelineEvents.splice(idx, 1);
-                    saveTimeline();
-                    renderTimeline();
-                });
+                btn.onclick = () => { timelineEvents.splice(parseInt(btn.dataset.idx),1); saveTimeline(); renderTimeline(); };
             });
         } else {
-            // Обычный режим (кнопки редактирования и удаления могут предупреждать о необходимости включить режим)
-            document.querySelectorAll('.edit-item-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    alert('Включите режим "Редактировать расписание" вверху карточки');
-                });
-            });
-            document.querySelectorAll('.delete-item-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    alert('Включите режим редактирования, чтобы удалять события');
-                });
+            document.querySelectorAll('.edit-item-btn, .delete-item-btn').forEach(btn => {
+                btn.onclick = () => alert('Включите режим "Редактировать расписание"');
             });
         }
     }
 
-    function enableEditMode() {
+    function toggleEditMode() {
         editMode = !editMode;
-        const addPanel = document.getElementById('addTimelinePanel');
-        const editBtn = document.getElementById('enableEditTimeline');
+        const panel = document.getElementById('addTimelinePanel');
+        const btn = document.getElementById('enableEditTimeline');
         if(editMode) {
-            addPanel.style.display = 'flex';
-            editBtn.textContent = '🔒 Завершить редактирование';
-            editBtn.style.background = '#2c7a5e';
-            editBtn.style.color = 'white';
+            panel.style.display = 'flex';
+            btn.textContent = '🔒 Завершить редактирование';
+            btn.style.background = '#2c7a5e';
+            btn.style.color = 'white';
         } else {
-            addPanel.style.display = 'none';
-            editBtn.textContent = '✏️ Редактировать расписание';
-            editBtn.style.background = '#eef2ff';
-            editBtn.style.color = '#1f3b4c';
+            panel.style.display = 'none';
+            btn.textContent = '✏️ Редактировать расписание';
+            btn.style.background = '#eef2ff';
+            btn.style.color = '#1f3b4c';
         }
-        renderTimeline(); // перерисовываем с новыми элементами управления
-    }
-
-    function addNewTimelineEvent() {
-        const timeInput = document.getElementById('newTimeInput');
-        const eventInput = document.getElementById('newEventInput');
-        const time = timeInput.value.trim();
-        const eventText = eventInput.value.trim();
-        if(!time || !eventText) {
-            alert('Введите время и описание события');
-            return;
-        }
-        timelineEvents.push({ time: time, event: eventText });
-        saveTimeline();
         renderTimeline();
-        timeInput.value = '';
-        eventInput.value = '';
+    }
+    function addTimelineEvent() {
+        const time = document.getElementById('newTimeInput').value.trim();
+        const ev = document.getElementById('newEventInput').value.trim();
+        if(time && ev) { timelineEvents.push({ time, event: ev }); saveTimeline(); renderTimeline(); document.getElementById('newTimeInput').value = ''; document.getElementById('newEventInput').value = ''; }
+        else alert('Введите время и событие');
     }
 
-    function escapeHtml(str) {
-        if(!str) return '';
-        return str.replace(/[&<>]/g, function(m) {
-            if(m === '&') return '&amp;';
-            if(m === '<') return '&lt;';
-            if(m === '>') return '&gt;';
-            return m;
-        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
-            return c;
-        });
-    }
-
-    // ---------- ЗАДАЧИ (приоритеты) ----------
+    // ---------- ЗАДАЧИ ----------
     let tasks = [];
-    function saveTasksToLocal() { localStorage.setItem('daily_tasks_edit', JSON.stringify(tasks)); }
-    function loadTasks() {
-        const stored = localStorage.getItem('daily_tasks_edit');
-        if(stored) tasks = JSON.parse(stored);
-        else {
-            tasks = [
-                { text: "Подготовить отчет для инвесторов", priority: "high", completed: false },
-                { text: "Встреча с командой в 15:00", priority: "medium", completed: false },
-                { text: "Прочитать деловую литературу", priority: "low", completed: false }
-            ];
-            saveTasksToLocal();
-        }
-        renderTaskList();
-    }
+    function loadTasks() { const s = localStorage.getItem('daily_tasks_main'); if(s) tasks = JSON.parse(s); else tasks = [{ text:"Подготовить отчет", priority:"high", completed:false },{ text:"Встреча 15:00", priority:"medium", completed:false }]; saveTasks(); renderTaskList(); }
+    function saveTasks() { localStorage.setItem('daily_tasks_main', JSON.stringify(tasks)); }
     function renderTaskList() {
-        const taskListEl = document.getElementById('taskList');
-        if(!taskListEl) return;
-        taskListEl.innerHTML = '';
-        tasks.forEach((task, idx) => {
-            const li = document.createElement('li');
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.checked = task.completed;
-            checkbox.addEventListener('change', () => {
-                tasks[idx].completed = checkbox.checked;
-                saveTasksToLocal();
-                renderTaskList();
-            });
-            const span = document.createElement('span');
-            span.style.flex = '1';
-            span.style.textDecoration = task.completed ? 'line-through' : 'none';
-            span.innerText = task.text;
-            const prioritySpan = document.createElement('span');
-            let priorityClass = task.priority === 'high' ? 'priority-high' : (task.priority === 'medium' ? 'priority-medium' : 'priority-low');
-            let priorityText = task.priority === 'high' ? 'Высокий' : (task.priority === 'medium' ? 'Средний' : 'Низкий');
-            prioritySpan.className = `task-priority ${priorityClass}`;
-            prioritySpan.innerText = priorityText;
-            const deleteBtn = document.createElement('button');
-            deleteBtn.innerText = '🗑️';
-            deleteBtn.style.background = 'none';
-            deleteBtn.style.border = 'none';
-            deleteBtn.style.cursor = 'pointer';
-            deleteBtn.onclick = () => { tasks.splice(idx,1); saveTasksToLocal(); renderTaskList(); };
-            li.appendChild(checkbox);
-            li.appendChild(span);
-            li.appendChild(prioritySpan);
-            li.appendChild(deleteBtn);
-            taskListEl.appendChild(li);
+        const ul = document.getElementById('taskList'); if(!ul) return;
+        ul.innerHTML = '';
+        tasks.forEach((t,idx)=>{
+            const li=document.createElement('li');
+            const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=t.completed;
+            cb.onchange=()=>{ tasks[idx].completed=cb.checked; saveTasks(); renderTaskList(); };
+            const span=document.createElement('span'); span.style.flex='1'; span.style.textDecoration=t.completed?'line-through':'none'; span.innerText=t.text;
+            const prioritySpan=document.createElement('span'); prioritySpan.className=`task-priority ${t.priority==='high'?'priority-high':t.priority==='medium'?'priority-medium':'priority-low'}`;
+            prioritySpan.innerText=t.priority==='high'?'Высокий':t.priority==='medium'?'Средний':'Низкий';
+            const del=document.createElement('button'); del.innerText='🗑️'; del.style.background='none'; del.style.border='none'; del.onclick=()=>{ tasks.splice(idx,1); saveTasks(); renderTaskList(); };
+            li.append(cb,span,prioritySpan,del); ul.appendChild(li);
         });
     }
-    function addNewTask() {
-        const input = document.getElementById('newTaskInput');
-        const prioritySelect = document.getElementById('prioritySelect');
-        const text = input.value.trim();
-        if(!text) return;
-        tasks.push({ text, priority: prioritySelect.value, completed: false });
-        saveTasksToLocal();
-        renderTaskList();
-        input.value = '';
-    }
+    function addTask(){ const inp=document.getElementById('newTaskInput'); const sel=document.getElementById('prioritySelect'); if(inp.value.trim()){ tasks.push({text:inp.value.trim(), priority:sel.value, completed:false}); saveTasks(); renderTaskList(); inp.value=''; } }
 
-    // ЗАМЕТКИ
-    function loadNotes() { 
-        const saved = localStorage.getItem('daily_notes_final');
-        const ta = document.getElementById('notesTextarea');
-        if(saved && ta) ta.value = saved;
-    }
-    function saveNotes() {
-        const ta = document.getElementById('notesTextarea');
-        if(ta) localStorage.setItem('daily_notes_final', ta.value);
-        alert('Заметки сохранены');
-    }
+    // заметки
+    function loadNotes(){ const val=localStorage.getItem('daily_notes_text'); if(val) document.getElementById('notesTextarea').value=val; }
+    function saveNotes(){ localStorage.setItem('daily_notes_text', document.getElementById('notesTextarea').value); alert('Заметки сохранены'); }
 
-    // КАЛЕНДАРИ
-    function renderCalendar(year, containerId) {
+    // ---------- КАЛЕНДАРИ (классический вид: текущий и будущий год) + ПЛАНЫ НА ДЕНЬ + выделение дней с планами ----------
+    let plansMap = new Map();     // key 'YYYY-MM-DD' -> текст плана
+    let selectedDateKey = null;  // выбранная дата в формате YYYY-MM-DD
+
+    function loadPlansMap() {
+        const stored = localStorage.getItem('daily_plans_map');
+        if(stored) {
+            const obj = JSON.parse(stored);
+            plansMap = new Map(Object.entries(obj));
+        }
+    }
+    function savePlansMap() {
+        const obj = Object.fromEntries(plansMap);
+        localStorage.setItem('daily_plans_map', JSON.stringify(obj));
+    }
+    function getDateKey(year, month, day) { return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`; }
+    function setPlanForDate(key, text) { 
+        if(text && text.trim() !== "") plansMap.set(key, text); 
+        else plansMap.delete(key);
+        savePlansMap(); 
+    }
+    function getPlanForDate(key) { return plansMap.get(key) || ''; }
+    function hasPlanForDate(key) { return plansMap.has(key) && plansMap.get(key).trim() !== ""; }
+
+    // Отрисовка календаря для конкретного года
+    function renderYearCalendar(year, containerId) {
         const container = document.getElementById(containerId);
         if(!container) return;
         container.innerHTML = '';
         const monthsGrid = document.createElement('div');
         monthsGrid.style.display = 'grid';
-        monthsGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(280px, 1fr))';
+        monthsGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
         monthsGrid.style.gap = '1.5rem';
-        for(let month=0; month<12; month++) {
+        
+        for(let month = 0; month < 12; month++) {
             const firstDay = new Date(year, month, 1);
             let startWeekday = firstDay.getDay();
-            let startOffset = startWeekday === 0 ? 6 : startWeekday-1;
+            let startOffset = startWeekday === 0 ? 6 : startWeekday - 1;
             const daysInMonth = new Date(year, month+1, 0).getDate();
-            const calDiv = document.createElement('div'); calDiv.className = 'calendar';
-            const title = document.createElement('h3'); title.innerText = `${['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'][month]} ${year}`;
-            calDiv.appendChild(title);
-            const weekRow = document.createElement('div'); weekRow.className = 'weekdays';
-            ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].forEach(d=>{ let div=document.createElement('div'); div.innerText=d; weekRow.appendChild(div); });
-            calDiv.appendChild(weekRow);
-            const daysGrid = document.createElement('div'); daysGrid.className = 'days-grid';
-            for(let i=0;i<startOffset;i++) { let empty=document.createElement('div'); empty.className='day-cell'; empty.style.background='transparent'; daysGrid.appendChild(empty); }
+            const monthName = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'][month];
+            
+            const monthDiv = document.createElement('div');
+            monthDiv.className = 'month-grid';
+            const monthTitle = document.createElement('div');
+            monthTitle.className = 'month-name';
+            monthTitle.innerText = monthName;
+            monthDiv.appendChild(monthTitle);
+            
+            const weekRow = document.createElement('div');
+            weekRow.className = 'weekdays-row';
+            ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].forEach(d => { const div = document.createElement('div'); div.innerText = d; weekRow.appendChild(div); });
+            monthDiv.appendChild(weekRow);
+            
+            const daysGrid = document.createElement('div');
+            daysGrid.className = 'days-grid-clickable';
+            
+            for(let i = 0; i < startOffset; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'day-cell-clickable';
+                empty.style.background = 'transparent';
+                empty.style.cursor = 'default';
+                empty.style.boxShadow = 'none';
+                daysGrid.appendChild(empty);
+            }
+            
             const today = new Date();
-            for(let d=1; d<=daysInMonth; d++) {
-                let cell=document.createElement('div'); cell.className='day-cell'; cell.innerText=d;
-                if(year===today.getFullYear() && month===today.getMonth() && d===today.getDate()) cell.classList.add('today');
+            for(let d = 1; d <= daysInMonth; d++) {
+                const cell = document.createElement('div');
+                cell.className = 'day-cell-clickable';
+                cell.innerText = d;
+                const cellKey = getDateKey(year, month, d);
+                
+                // Проверка, есть ли планы на этот день
+                if(hasPlanForDate(cellKey)) {
+                    cell.classList.add('has-plan');
+                }
+                // Выделение выбранного дня
+                if(selectedDateKey === cellKey) {
+                    cell.classList.add('selected-day');
+                }
+                // Сегодняшняя дата — полужирный шрифт
+                if(today.getFullYear() === year && today.getMonth() === month && today.getDate() === d) {
+                    cell.style.fontWeight = 'bold';
+                    cell.style.border = '1px solid #2c7a5e';
+                }
+                
+                cell.addEventListener('click', (function(key, dayNum, m, y) {
+                    return function() { selectDate(key, dayNum, m, y); };
+                })(cellKey, d, month, year));
                 daysGrid.appendChild(cell);
             }
-            calDiv.appendChild(daysGrid);
-            monthsGrid.appendChild(calDiv);
+            monthDiv.appendChild(daysGrid);
+            monthsGrid.appendChild(monthDiv);
         }
         container.appendChild(monthsGrid);
     }
+    
+    function selectDate(dateKey, dayNum, month, year) {
+        selectedDateKey = dateKey;
+        const dateObj = new Date(year, month, dayNum);
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('selectedDateTitle').innerHTML = `📌 ${dateObj.toLocaleDateString('ru-RU', options)}`;
+        const planText = getPlanForDate(dateKey);
+        document.getElementById('dayPlanText').value = planText;
+        // Перерисовываем оба календаря, чтобы обновить выделение
+        const currentYear = new Date().getFullYear();
+        renderYearCalendar(currentYear, 'currentYearGrid');
+        renderYearCalendar(currentYear + 1, 'nextYearGrid');
+    }
+    
+    function saveCurrentDayPlan() {
+        if(!selectedDateKey) { alert('Сначала выберите день в календаре (нажмите на дату)'); return; }
+        const planValue = document.getElementById('dayPlanText').value;
+        setPlanForDate(selectedDateKey, planValue);
+        // Перерисовываем календари, чтобы обновить отметки о планах
+        const currentYear = new Date().getFullYear();
+        renderYearCalendar(currentYear, 'currentYearGrid');
+        renderYearCalendar(currentYear + 1, 'nextYearGrid');
+        // Если выбранный день всё ещё выбран, обновим заголовок и текст (план мог очиститься)
+        const planText = getPlanForDate(selectedDateKey);
+        document.getElementById('dayPlanText').value = planText;
+        alert(`Планы на ${selectedDateKey} сохранены!`);
+    }
+    
     function renderBothCalendars() {
-        const curYear = new Date().getFullYear();
-        const root = document.getElementById('calendarRoot');
-        if(root) {
-            root.innerHTML = `<div><h2 style="margin-bottom:1rem;">📅 Текущий год</h2><div id="currentYearGrid"></div></div><div style="margin-top:2rem;"><h2 style="margin-bottom:1rem;">📆 Будущий год — ${curYear+1}</h2><div id="nextYearGrid"></div></div>`;
-            renderCalendar(curYear, 'currentYearGrid');
-            renderCalendar(curYear+1, 'nextYearGrid');
+        const currentYear = new Date().getFullYear();
+        const wrapper = document.getElementById('calendarsWrapper');
+        if(wrapper) {
+            wrapper.innerHTML = `
+                <div class="year-calendar">
+                    <h3>📅 Текущий год — ${currentYear}</h3>
+                    <div id="currentYearGrid"></div>
+                </div>
+                <div class="year-calendar">
+                    <h3>📆 Будущий год — ${currentYear + 1}</h3>
+                    <div id="nextYearGrid"></div>
+                </div>
+            `;
+            renderYearCalendar(currentYear, 'currentYearGrid');
+            renderYearCalendar(currentYear + 1, 'nextYearGrid');
         }
     }
 
@@ -706,34 +748,32 @@
     function initTabs() {
         document.querySelectorAll('.tab-btn').forEach(btn=>{
             btn.addEventListener('click',()=>{
-                const tabId=btn.getAttribute('data-tab');
+                const id=btn.dataset.tab;
                 document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
                 btn.classList.add('active');
                 document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active-pane'));
-                const activePane=document.getElementById(tabId);
-                if(activePane) activePane.classList.add('active-pane');
-                if(tabId==='calendar') renderBothCalendars();
+                document.getElementById(id).classList.add('active-pane');
+                if(id === 'calendar') { renderBothCalendars(); }
             });
         });
     }
 
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
     document.addEventListener('DOMContentLoaded', () => {
-        loadTimeline();
-        renderTimeline();
+        updateCurrentDateBadge();
+        loadTimeline(); renderTimeline();
         loadTasks();
         loadNotes();
+        loadPlansMap();
         renderBothCalendars();
         initTabs();
-
-        const editBtn = document.getElementById('enableEditTimeline');
-        if(editBtn) editBtn.addEventListener('click', enableEditMode);
-        const addConfirm = document.getElementById('confirmAddEventBtn');
-        if(addConfirm) addConfirm.addEventListener('click', addNewTimelineEvent);
-        const addTaskBtn = document.getElementById('addTaskBtn');
-        if(addTaskBtn) addTaskBtn.addEventListener('click', addNewTask);
-        const saveNoteBtn = document.getElementById('saveNotesBtn');
-        if(saveNoteBtn) saveNoteBtn.addEventListener('click', saveNotes);
+        
+        document.getElementById('enableEditTimeline')?.addEventListener('click', toggleEditMode);
+        document.getElementById('confirmAddEventBtn')?.addEventListener('click', addTimelineEvent);
+        document.getElementById('addTaskBtn')?.addEventListener('click', addTask);
+        document.getElementById('saveNotesBtn')?.addEventListener('click', saveNotes);
+        document.getElementById('saveDayPlanBtn')?.addEventListener('click', saveCurrentDayPlan);
+        
+        setInterval(()=>updateCurrentDateBadge(), 60000);
     });
-</script>
-</body>
-</html>
