@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Цифровой ежедневник | Календарь с планами и выделением</title>
+    <title>Цифровой ежедневник | Календарь с переключением годов</title>
     <style>
         * {
             margin: 0;
@@ -96,7 +96,6 @@
             to { opacity: 1; transform: translateY(0);}
         }
 
-        /* расписание */
         .schedule-grid {
             display: grid;
             grid-template-columns: 1fr 1.2fr;
@@ -207,7 +206,6 @@
             cursor: pointer;
         }
 
-        /* задачи */
         .task-list {
             list-style: none;
             margin-top: 8px;
@@ -229,7 +227,6 @@
         .priority-medium { background: #fff0db; color: #c2410c; }
         .priority-low { background: #e0f2fe; color: #0369a1; }
 
-        /* заметки */
         .notes-area {
             background: #fefcf5;
             border-radius: 24px;
@@ -247,7 +244,6 @@
             font-family: monospace;
         }
 
-        /* справочная */
         .ref-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -275,43 +271,64 @@
             border-bottom: 1px solid #e2e8f0;
         }
 
-        /* КАЛЕНДАРИ - классический вид (два года), но с возможностью выбора дня и планами */
-        .calendar-with-plans {
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-        }
-        .calendars-wrapper {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 2rem;
-            justify-content: space-between;
-        }
-        .year-calendar {
-            flex: 1;
-            min-width: 320px;
+        /* Календарь - один год с переключателем */
+        .calendar-container {
             background: #ffffff;
             border-radius: 28px;
             border: 1px solid #eef2f8;
-            padding: 1.2rem;
+            padding: 1.5rem;
         }
-        .year-calendar h3 {
-            text-align: center;
-            margin-bottom: 1rem;
-            font-weight: 600;
-            color: #2c5a4a;
-            font-size: 1.3rem;
+        .year-selector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
         }
-        .month-grid {
-            margin-bottom: 1.5rem;
-            break-inside: avoid;
+        .year-selector button {
+            background: #1f3b4c;
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: bold;
+        }
+        .year-selector button:hover {
+            background: #2c7a5e;
+            transform: scale(1.05);
+        }
+        .year-selector span {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f3b4c;
+            background: #eef2ff;
+            padding: 0.3rem 1.8rem;
+            border-radius: 60px;
+        }
+        .months-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        .month-card {
+            background: #fafcff;
+            border-radius: 24px;
+            padding: 0.8rem;
+            border: 1px solid #e9edf2;
         }
         .month-name {
-            font-weight: 600;
-            margin: 0.8rem 0 0.5rem 0;
-            color: #1f3b4c;
-            font-size: 0.9rem;
-            padding-left: 4px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-align: center;
+            margin-bottom: 0.8rem;
+            color: #2c5a4a;
+            background: #f0f4f9;
+            padding: 6px;
+            border-radius: 30px;
         }
         .weekdays-row {
             display: grid;
@@ -320,14 +337,14 @@
             font-size: 0.7rem;
             font-weight: 600;
             color: #5c6e7c;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
-        .days-grid-clickable {
+        .days-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 6px;
         }
-        .day-cell-clickable {
+        .day-cell {
             background: #f8fafc;
             text-align: center;
             padding: 8px 0;
@@ -337,26 +354,23 @@
             font-size: 0.85rem;
             position: relative;
         }
-        .day-cell-clickable:hover {
+        .day-cell:hover {
             background: #d9e6f5;
         }
-        .day-cell-clickable.selected-day {
+        .day-cell.selected {
             background: #2c7a5e;
             color: white;
             font-weight: bold;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
-        /* выделение дней, на которые есть планы */
-        .day-cell-clickable.has-plan {
+        .day-cell.has-plan {
             background: #fff3bf;
             font-weight: 600;
-            position: relative;
         }
-        .day-cell-clickable.has-plan.selected-day {
+        .day-cell.has-plan.selected {
             background: #2c7a5e;
             color: white;
         }
-        .day-cell-clickable.has-plan::after {
+        .day-cell.has-plan::after {
             content: "📌";
             font-size: 0.6rem;
             position: absolute;
@@ -364,13 +378,12 @@
             right: 4px;
             opacity: 0.8;
         }
-
         .day-plans-panel {
             background: #fefcf5;
             border-radius: 28px;
             padding: 1.5rem;
             border: 1px solid #f1e9d2;
-            margin-top: 0.5rem;
+            margin-top: 1.8rem;
         }
         .selected-date-title {
             font-size: 1.3rem;
@@ -407,23 +420,26 @@
             color: #4b5563;
             border-top: 1px solid #e2e8f0;
         }
+        button {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
 <div class="planner-container">
     <div class="header">
         <h1>📓 Executive Daily Planner</h1>
-        <p>Освободите голову — фокус на выполнении. В календаре дни с планами отмечены 📌</p>
+        <p>Освободите голову — фокус на выполнении. Дни с планами отмечены 📌</p>
     </div>
 
     <div class="tabs">
         <button class="tab-btn active" data-tab="schedule">📅 Расписание дня</button>
         <button class="tab-btn" data-tab="notes">📝 Заметки</button>
         <button class="tab-btn" data-tab="reference">📚 Справочная информация</button>
-        <button class="tab-btn" data-tab="calendar">🗓️ Календари + Планы</button>
+        <button class="tab-btn" data-tab="calendar">🗓️ Календарь + Планы</button>
     </div>
 
-    <!-- Панель РАСПИСАНИЕ -->
+    <!-- Расписание дня -->
     <div id="schedule" class="tab-pane active-pane">
         <div class="schedule-grid">
             <div class="timeline-card">
@@ -438,7 +454,6 @@
                     <input type="text" id="newEventInput" placeholder="Событие">
                     <button id="confirmAddEventBtn">➕ Добавить</button>
                 </div>
-                <div class="info-note">💡 Режим редактирования: меняйте время, описание, удаляйте строки. Всё сохраняется.</div>
             </div>
             <div class="tasks-card">
                 <div class="card-title">✓ Задачи & Приоритеты</div>
@@ -456,41 +471,46 @@
         </div>
     </div>
 
-    <!-- ЗАМЕТКИ -->
+    <!-- Заметки -->
     <div id="notes" class="tab-pane">
         <div class="notes-area">
             <div class="card-title">📔 Личные заметки</div>
             <textarea id="notesTextarea" placeholder="Идеи, встречи, мысли..."></textarea>
-            <button id="saveNotesBtn" style="margin-top:12px; background:#eef2ff; border:none; border-radius:30px; padding:6px 20px;">💾 Сохранить</button>
+            <button id="saveNotesBtn" style="margin-top:12px; background:#eef2ff; border:none; border-radius:30px; padding:6px 20px; cursor:pointer;">💾 Сохранить</button>
         </div>
     </div>
 
-    <!-- СПРАВКА -->
+    <!-- Справочная информация -->
     <div id="reference" class="tab-pane">
         <div class="ref-grid">
             <div class="ref-card"><h3>📞 Телефонные коды</h3><table class="code-table"><tr><td>🇷🇺 Россия</td><td>+7</td><tr><td>🇺🇸 США</td><td>+1</td></tr><tr><td>🇬🇧 Великобритания</td><td>+44</td></tr><tr><td>🇩🇪 Германия</td><td>+49</td></tr></table></div>
-            <div class="ref-card"><h3>🌍 Часовые пояса</h3><table class="timezone-table"><tr><td>Москва</td><td>UTC+3</td></tr><tr><td>Лондон</td><td>UTC+0/+1</td></tr><tr><td>Нью-Йорк</td><td>UTC-5</td></tr><tr><td>Токио</td><td>UTC+9</td></tr></table></div>
+            <div class="ref-card"><h3>🌍 Часовые пояса</h3><table class="timezone-table"><tr><td>Москва</td><td>UTC+3</td></tr><tr><td>Лондон</td><td>UTC+0</td></tr><tr><td>Нью-Йорк</td><td>UTC-5</td></tr><tr><td>Токио</td><td>UTC+9</td></tr></table></div>
             <div class="ref-card"><h3>📏 Меры и веса</h3><table class="measure-table"><tr><td>1 дюйм</td><td>2.54 см</td></tr><tr><td>1 фут</td><td>30.48 см</td></tr><tr><td>1 фунт</td><td>453.6 г</td></tr><tr><td>1 литр</td><td>0.264 гал</td></tr></table></div>
         </div>
     </div>
 
-    <!-- КАЛЕНДАРИ (текущий и будущий год) + панель планов на выбранный день -->
+    <!-- Календарь (один год, стрелки переключения) -->
     <div id="calendar" class="tab-pane">
-        <div class="calendar-with-plans">
-            <div class="calendars-wrapper" id="calendarsWrapper"></div>
-            <div class="day-plans-panel">
-                <div class="selected-date-title" id="selectedDateTitle">Выберите день в календаре</div>
-                <textarea id="dayPlanText" class="plan-textarea" placeholder="Запишите планы на этот день: встречи, задачи, заметки..."></textarea>
-                <button id="saveDayPlanBtn" class="save-plan-btn">📌 Сохранить планы на этот день</button>
-                <div class="info-note">✨ Нажмите на любую дату в календаре — напишите планы. Дни с сохранёнными планами выделяются жёлтым цветом и значком 📌</div>
+        <div class="calendar-container">
+            <div class="year-selector">
+                <button id="prevYearBtn" title="Предыдущий год">◀</button>
+                <span id="currentYearDisplay"></span>
+                <button id="nextYearBtn" title="Следующий год">▶</button>
             </div>
+            <div id="calendarMonthsGrid" class="months-grid"></div>
+        </div>
+        <div class="day-plans-panel">
+            <div class="selected-date-title" id="selectedDateTitle">📅 Выберите день в календаре</div>
+            <textarea id="dayPlanText" class="plan-textarea" placeholder="Напишите планы на этот день: встречи, задачи, заметки..."></textarea>
+            <button id="saveDayPlanBtn" class="save-plan-btn">📌 Сохранить планы на день</button>
+            <div class="info-note">✨ Нажмите на любую дату в календаре, напишите планы и нажмите «Сохранить». Дни с планами выделяются жёлтым цветом со значком 📌. Стрелками можно переключать годы.</div>
         </div>
     </div>
-    <footer>© Цифровой ежедневник — планируйте дни и достигайте целей. Дни с планами отмечены 📌</footer>
+    <footer>© Цифровой ежедневник — планируйте дни и достигайте целей.</footer>
 </div>
 
 <script>
-    // ---------- 1. ХРОНОМЕТРАЖ (редактируемый, с отображением текущей даты) ----------
+    // ===================== ХРОНОМЕТРАЖ =====================
     let timelineEvents = [];
     let editMode = false;
 
@@ -513,8 +533,7 @@
                 { time: "12:30", event: "Обед и восстановление" },
                 { time: "14:00", event: "Встречи / переговоры" },
                 { time: "16:00", event: "Работа с почтой и отчёты" },
-                { time: "18:00", event: "Подведение итогов дня" },
-                { time: "19:30", event: "Личное время" }
+                { time: "18:00", event: "Подведение итогов дня" }
             ];
             saveTimeline();
         }
@@ -526,12 +545,13 @@
         if(!container) return;
         if(!timelineEvents.length) { container.innerHTML = '<div class="info-note">Нет событий. Добавьте через режим редактирования.</div>'; return; }
         container.innerHTML = timelineEvents.map((item, idx) => `
-            <div class="timeline-item" data-idx="${idx}">
+            <div class="timeline-item">
                 ${editMode ? `<input type="text" class="inline-input edit-time" value="${escapeHtml(item.time)}" style="width:85px;">` : `<div class="time">${escapeHtml(item.time)}</div>`}
                 ${editMode ? `<input type="text" class="inline-input edit-event" value="${escapeHtml(item.event)}" style="flex:1;">` : `<div class="event-desc">${escapeHtml(item.event)}</div>`}
-                ${editMode ? `<div class="timeline-actions"><button class="save-item-btn" data-idx="${idx}">💾</button><button class="delete-item-btn" data-idx="${idx}">🗑️</button></div>` : `<div class="timeline-actions"><button class="edit-item-btn" data-idx="${idx}" title="Включите режим редактирования">✏️</button><button class="delete-item-btn" data-idx="${idx}" title="Включите режим">🗑️</button></div>`}
+                ${editMode ? `<div class="timeline-actions"><button class="save-item-btn" data-idx="${idx}">💾</button><button class="delete-item-btn" data-idx="${idx}">🗑️</button></div>` : ''}
             </div>
         `).join('');
+        
         if(editMode) {
             document.querySelectorAll('.save-item-btn').forEach(btn => {
                 btn.onclick = () => {
@@ -540,15 +560,10 @@
                     const newTime = div.querySelector('.edit-time').value;
                     const newEvent = div.querySelector('.edit-event').value;
                     if(newTime && newEvent) { timelineEvents[idx] = { time: newTime, event: newEvent }; saveTimeline(); renderTimeline(); }
-                    else alert('Заполните поля');
                 };
             });
             document.querySelectorAll('.delete-item-btn').forEach(btn => {
                 btn.onclick = () => { timelineEvents.splice(parseInt(btn.dataset.idx),1); saveTimeline(); renderTimeline(); };
-            });
-        } else {
-            document.querySelectorAll('.edit-item-btn, .delete-item-btn').forEach(btn => {
-                btn.onclick = () => alert('Включите режим "Редактировать расписание"');
             });
         }
     }
@@ -577,73 +592,108 @@
         else alert('Введите время и событие');
     }
 
-    // ---------- ЗАДАЧИ ----------
+    // ===================== ЗАДАЧИ =====================
     let tasks = [];
-    function loadTasks() { const s = localStorage.getItem('daily_tasks_main'); if(s) tasks = JSON.parse(s); else tasks = [{ text:"Подготовить отчет", priority:"high", completed:false },{ text:"Встреча 15:00", priority:"medium", completed:false }]; saveTasks(); renderTaskList(); }
+    function loadTasks() { 
+        const s = localStorage.getItem('daily_tasks_main'); 
+        if(s) tasks = JSON.parse(s); 
+        else tasks = [{ text:"Подготовить отчет для инвесторов", priority:"high", completed:false },{ text:"Встреча с командой в 15:00", priority:"medium", completed:false }]; 
+        saveTasks(); 
+        renderTaskList(); 
+    }
     function saveTasks() { localStorage.setItem('daily_tasks_main', JSON.stringify(tasks)); }
     function renderTaskList() {
-        const ul = document.getElementById('taskList'); if(!ul) return;
+        const ul = document.getElementById('taskList'); 
+        if(!ul) return;
         ul.innerHTML = '';
-        tasks.forEach((t,idx)=>{
-            const li=document.createElement('li');
-            const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=t.completed;
-            cb.onchange=()=>{ tasks[idx].completed=cb.checked; saveTasks(); renderTaskList(); };
-            const span=document.createElement('span'); span.style.flex='1'; span.style.textDecoration=t.completed?'line-through':'none'; span.innerText=t.text;
-            const prioritySpan=document.createElement('span'); prioritySpan.className=`task-priority ${t.priority==='high'?'priority-high':t.priority==='medium'?'priority-medium':'priority-low'}`;
-            prioritySpan.innerText=t.priority==='high'?'Высокий':t.priority==='medium'?'Средний':'Низкий';
-            const del=document.createElement('button'); del.innerText='🗑️'; del.style.background='none'; del.style.border='none'; del.onclick=()=>{ tasks.splice(idx,1); saveTasks(); renderTaskList(); };
-            li.append(cb,span,prioritySpan,del); ul.appendChild(li);
+        tasks.forEach((t, idx) => {
+            const li = document.createElement('li');
+            const cb = document.createElement('input'); 
+            cb.type = 'checkbox'; 
+            cb.checked = t.completed;
+            cb.onchange = () => { tasks[idx].completed = cb.checked; saveTasks(); renderTaskList(); };
+            const span = document.createElement('span'); 
+            span.style.flex = '1'; 
+            span.style.textDecoration = t.completed ? 'line-through' : 'none'; 
+            span.innerText = t.text;
+            const prioritySpan = document.createElement('span'); 
+            prioritySpan.className = `task-priority ${t.priority === 'high' ? 'priority-high' : t.priority === 'medium' ? 'priority-medium' : 'priority-low'}`;
+            prioritySpan.innerText = t.priority === 'high' ? 'Высокий' : t.priority === 'medium' ? 'Средний' : 'Низкий';
+            const del = document.createElement('button'); 
+            del.innerText = '🗑️'; 
+            del.style.background = 'none'; 
+            del.style.border = 'none'; 
+            del.onclick = () => { tasks.splice(idx, 1); saveTasks(); renderTaskList(); };
+            li.append(cb, span, prioritySpan, del); 
+            ul.appendChild(li);
         });
     }
-    function addTask(){ const inp=document.getElementById('newTaskInput'); const sel=document.getElementById('prioritySelect'); if(inp.value.trim()){ tasks.push({text:inp.value.trim(), priority:sel.value, completed:false}); saveTasks(); renderTaskList(); inp.value=''; } }
+    function addTask() { 
+        const inp = document.getElementById('newTaskInput'); 
+        const sel = document.getElementById('prioritySelect'); 
+        if(inp.value.trim()) { 
+            tasks.push({ text: inp.value.trim(), priority: sel.value, completed: false }); 
+            saveTasks(); 
+            renderTaskList(); 
+            inp.value = ''; 
+        } 
+    }
 
-    // заметки
-    function loadNotes(){ const val=localStorage.getItem('daily_notes_text'); if(val) document.getElementById('notesTextarea').value=val; }
-    function saveNotes(){ localStorage.setItem('daily_notes_text', document.getElementById('notesTextarea').value); alert('Заметки сохранены'); }
+    // ===================== ЗАМЕТКИ =====================
+    function loadNotes() { 
+        const val = localStorage.getItem('daily_notes_text'); 
+        if(val) document.getElementById('notesTextarea').value = val; 
+    }
+    function saveNotes() { 
+        localStorage.setItem('daily_notes_text', document.getElementById('notesTextarea').value); 
+        alert('Заметки сохранены'); 
+    }
 
-    // ---------- КАЛЕНДАРИ (классический вид: текущий и будущий год) + ПЛАНЫ НА ДЕНЬ + выделение дней с планами ----------
-    let plansMap = new Map();     // key 'YYYY-MM-DD' -> текст плана
-    let selectedDateKey = null;  // выбранная дата в формате YYYY-MM-DD
+    // ===================== КАЛЕНДАРЬ (один год с переключением) =====================
+    let currentCalendarYear = new Date().getFullYear();
+    let plansMap = new Map();
+    let selectedDateKey = null;
 
     function loadPlansMap() {
-        const stored = localStorage.getItem('daily_plans_map');
+        const stored = localStorage.getItem('daily_plans_map_full');
         if(stored) {
-            const obj = JSON.parse(stored);
-            plansMap = new Map(Object.entries(obj));
+            plansMap = new Map(Object.entries(JSON.parse(stored)));
         }
     }
-    function savePlansMap() {
-        const obj = Object.fromEntries(plansMap);
-        localStorage.setItem('daily_plans_map', JSON.stringify(obj));
+    function savePlansMap() { 
+        localStorage.setItem('daily_plans_map_full', JSON.stringify(Object.fromEntries(plansMap))); 
     }
-    function getDateKey(year, month, day) { return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`; }
+    function getDateKey(year, month, day) { 
+        return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`; 
+    }
     function setPlanForDate(key, text) { 
-        if(text && text.trim() !== "") plansMap.set(key, text); 
-        else plansMap.delete(key);
+        if(text && text.trim().length > 0) plansMap.set(key, text.trim()); 
+        else plansMap.delete(key); 
         savePlansMap(); 
     }
-    function getPlanForDate(key) { return plansMap.get(key) || ''; }
-    function hasPlanForDate(key) { return plansMap.has(key) && plansMap.get(key).trim() !== ""; }
+    function hasPlan(key) { 
+        return plansMap.has(key) && plansMap.get(key).trim().length > 0; 
+    }
+    function getPlan(key) { 
+        return plansMap.get(key) || ''; 
+    }
 
-    // Отрисовка календаря для конкретного года
-    function renderYearCalendar(year, containerId) {
-        const container = document.getElementById(containerId);
+    function renderCalendar() {
+        const container = document.getElementById('calendarMonthsGrid');
         if(!container) return;
         container.innerHTML = '';
-        const monthsGrid = document.createElement('div');
-        monthsGrid.style.display = 'grid';
-        monthsGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-        monthsGrid.style.gap = '1.5rem';
+        document.getElementById('currentYearDisplay').innerText = currentCalendarYear;
         
         for(let month = 0; month < 12; month++) {
-            const firstDay = new Date(year, month, 1);
+            const firstDay = new Date(currentCalendarYear, month, 1);
             let startWeekday = firstDay.getDay();
             let startOffset = startWeekday === 0 ? 6 : startWeekday - 1;
-            const daysInMonth = new Date(year, month+1, 0).getDate();
+            const daysInMonth = new Date(currentCalendarYear, month+1, 0).getDate();
             const monthName = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'][month];
             
             const monthDiv = document.createElement('div');
-            monthDiv.className = 'month-grid';
+            monthDiv.className = 'month-card';
+            
             const monthTitle = document.createElement('div');
             monthTitle.className = 'month-name';
             monthTitle.innerText = monthName;
@@ -651,15 +701,19 @@
             
             const weekRow = document.createElement('div');
             weekRow.className = 'weekdays-row';
-            ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].forEach(d => { const div = document.createElement('div'); div.innerText = d; weekRow.appendChild(div); });
+            ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].forEach(d => { 
+                const div = document.createElement('div'); 
+                div.innerText = d; 
+                weekRow.appendChild(div); 
+            });
             monthDiv.appendChild(weekRow);
             
             const daysGrid = document.createElement('div');
-            daysGrid.className = 'days-grid-clickable';
+            daysGrid.className = 'days-grid';
             
             for(let i = 0; i < startOffset; i++) {
                 const empty = document.createElement('div');
-                empty.className = 'day-cell-clickable';
+                empty.className = 'day-cell';
                 empty.style.background = 'transparent';
                 empty.style.cursor = 'default';
                 empty.style.boxShadow = 'none';
@@ -669,104 +723,89 @@
             const today = new Date();
             for(let d = 1; d <= daysInMonth; d++) {
                 const cell = document.createElement('div');
-                cell.className = 'day-cell-clickable';
+                cell.className = 'day-cell';
                 cell.innerText = d;
-                const cellKey = getDateKey(year, month, d);
+                const cellKey = getDateKey(currentCalendarYear, month, d);
                 
-                // Проверка, есть ли планы на этот день
-                if(hasPlanForDate(cellKey)) {
-                    cell.classList.add('has-plan');
-                }
-                // Выделение выбранного дня
-                if(selectedDateKey === cellKey) {
-                    cell.classList.add('selected-day');
-                }
-                // Сегодняшняя дата — полужирный шрифт
-                if(today.getFullYear() === year && today.getMonth() === month && today.getDate() === d) {
+                if(hasPlan(cellKey)) cell.classList.add('has-plan');
+                if(selectedDateKey === cellKey) cell.classList.add('selected');
+                if(today.getFullYear() === currentCalendarYear && today.getMonth() === month && today.getDate() === d) {
                     cell.style.fontWeight = 'bold';
                     cell.style.border = '1px solid #2c7a5e';
                 }
                 
-                cell.addEventListener('click', (function(key, dayNum, m, y) {
-                    return function() { selectDate(key, dayNum, m, y); };
-                })(cellKey, d, month, year));
+                cell.onclick = (function(key, y, m, day) {
+                    return function() {
+                        selectedDateKey = key;
+                        const dateObj = new Date(y, m, day);
+                        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                        document.getElementById('selectedDateTitle').innerHTML = `📌 ${dateObj.toLocaleDateString('ru-RU', options)}`;
+                        document.getElementById('dayPlanText').value = getPlan(key);
+                        renderCalendar(); // перерисовываем для подсветки выбранного дня
+                    };
+                })(cellKey, currentCalendarYear, month, d);
+                
                 daysGrid.appendChild(cell);
             }
             monthDiv.appendChild(daysGrid);
-            monthsGrid.appendChild(monthDiv);
+            container.appendChild(monthDiv);
         }
-        container.appendChild(monthsGrid);
     }
     
-    function selectDate(dateKey, dayNum, month, year) {
-        selectedDateKey = dateKey;
-        const dateObj = new Date(year, month, dayNum);
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        document.getElementById('selectedDateTitle').innerHTML = `📌 ${dateObj.toLocaleDateString('ru-RU', options)}`;
-        const planText = getPlanForDate(dateKey);
-        document.getElementById('dayPlanText').value = planText;
-        // Перерисовываем оба календаря, чтобы обновить выделение
-        const currentYear = new Date().getFullYear();
-        renderYearCalendar(currentYear, 'currentYearGrid');
-        renderYearCalendar(currentYear + 1, 'nextYearGrid');
+    function changeYear(delta) {
+        currentCalendarYear += delta;
+        selectedDateKey = null;
+        document.getElementById('selectedDateTitle').innerHTML = '📅 Выберите день в календаре';
+        document.getElementById('dayPlanText').value = '';
+        renderCalendar();
     }
     
     function saveCurrentDayPlan() {
-        if(!selectedDateKey) { alert('Сначала выберите день в календаре (нажмите на дату)'); return; }
+        if(!selectedDateKey) { 
+            alert('Сначала выберите день в календаре (нажмите на дату)'); 
+            return; 
+        }
         const planValue = document.getElementById('dayPlanText').value;
         setPlanForDate(selectedDateKey, planValue);
-        // Перерисовываем календари, чтобы обновить отметки о планах
-        const currentYear = new Date().getFullYear();
-        renderYearCalendar(currentYear, 'currentYearGrid');
-        renderYearCalendar(currentYear + 1, 'nextYearGrid');
-        // Если выбранный день всё ещё выбран, обновим заголовок и текст (план мог очиститься)
-        const planText = getPlanForDate(selectedDateKey);
-        document.getElementById('dayPlanText').value = planText;
-        alert(`Планы на ${selectedDateKey} сохранены!`);
-    }
-    
-    function renderBothCalendars() {
-        const currentYear = new Date().getFullYear();
-        const wrapper = document.getElementById('calendarsWrapper');
-        if(wrapper) {
-            wrapper.innerHTML = `
-                <div class="year-calendar">
-                    <h3>📅 Текущий год — ${currentYear}</h3>
-                    <div id="currentYearGrid"></div>
-                </div>
-                <div class="year-calendar">
-                    <h3>📆 Будущий год — ${currentYear + 1}</h3>
-                    <div id="nextYearGrid"></div>
-                </div>
-            `;
-            renderYearCalendar(currentYear, 'currentYearGrid');
-            renderYearCalendar(currentYear + 1, 'nextYearGrid');
-        }
+        renderCalendar();
+        alert(`✅ Планы на ${selectedDateKey} сохранены!`);
     }
 
-    // Табы
+    // ===================== ТАБЫ =====================
     function initTabs() {
-        document.querySelectorAll('.tab-btn').forEach(btn=>{
-            btn.addEventListener('click',()=>{
-                const id=btn.dataset.tab;
-                document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-                btn.classList.add('active');
-                document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active-pane'));
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.getAttribute('data-tab');
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active-pane'));
                 document.getElementById(id).classList.add('active-pane');
-                if(id === 'calendar') { renderBothCalendars(); }
+                if(id === 'calendar') {
+                    renderCalendar();
+                }
             });
         });
     }
 
-    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+    function escapeHtml(str) { 
+        if(!str) return ''; 
+        return str.replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        });
+    }
 
+    // ===================== ЗАПУСК =====================
     document.addEventListener('DOMContentLoaded', () => {
         updateCurrentDateBadge();
-        loadTimeline(); renderTimeline();
+        loadTimeline();
+        renderTimeline();
         loadTasks();
         loadNotes();
         loadPlansMap();
-        renderBothCalendars();
+        renderCalendar();
         initTabs();
         
         document.getElementById('enableEditTimeline')?.addEventListener('click', toggleEditMode);
@@ -774,6 +813,11 @@
         document.getElementById('addTaskBtn')?.addEventListener('click', addTask);
         document.getElementById('saveNotesBtn')?.addEventListener('click', saveNotes);
         document.getElementById('saveDayPlanBtn')?.addEventListener('click', saveCurrentDayPlan);
+        document.getElementById('prevYearBtn')?.addEventListener('click', () => changeYear(-1));
+        document.getElementById('nextYearBtn')?.addEventListener('click', () => changeYear(1));
         
-        setInterval(()=>updateCurrentDateBadge(), 60000);
+        setInterval(updateCurrentDateBadge, 60000);
     });
+</script>
+</body>
+</html>
